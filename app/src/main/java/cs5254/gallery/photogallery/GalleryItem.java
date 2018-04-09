@@ -1,5 +1,6 @@
 package cs5254.gallery.photogallery;
 
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 
 public class GalleryItem {
@@ -9,6 +10,7 @@ public class GalleryItem {
     private String mOwner;
     private double mLat;
     private double mLon;
+    private Drawable mDrawable;
 
     public String getCaption() {
         return mCaption;
@@ -69,5 +71,13 @@ public class GalleryItem {
     @Override
     public String toString() {
         return mCaption;
+    }
+
+    public void setDrawable(Drawable drawable) {
+        mDrawable = drawable;
+    }
+
+    public Drawable getDrawable() {
+        return mDrawable;
     }
 }

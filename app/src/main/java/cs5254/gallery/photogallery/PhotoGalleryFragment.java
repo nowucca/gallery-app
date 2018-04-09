@@ -1,25 +1,32 @@
 package cs5254.gallery.photogallery;
 
+import android.app.Dialog;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.ImageView;
 
 import java.util.List;
 
 public class PhotoGalleryFragment extends Fragment implements GalleryItemLab.OnGalleryItemsRefreshedListener {
     private static final String TAG = "PhotoGalleryFragment";
+
+    private static final String DIALOG_PHOTO = "dialog_photo";
 
     private RecyclerView mPhotoRecyclerView;
     private ThumbnailDownloader<PhotoHolder> mThumbnailDownloader;
@@ -112,15 +119,32 @@ public class PhotoGalleryFragment extends Fragment implements GalleryItemLab.OnG
 
     private class PhotoHolder extends RecyclerView.ViewHolder {
         private ImageView mItemImageView;
+        private int mGalleryItemPosition;
 
         public PhotoHolder(View itemView) {
             super(itemView);
 
-            mItemImageView = (ImageView) itemView.findViewById(R.id.item_image_view);
+            mItemImageView = itemView.findViewById(R.id.item_image_view);
+            mItemImageView.setOnClickListener(v -> {
+                FragmentManager manager = getFragmentManager();
+                PhotoDialogFragment dialogFragment = PhotoDialogFragment.newInstance(mGalleryItemPosition);
+
+
+                dialogFragment.setCancelable(false);
+                dialogFragment.setTargetFragment(PhotoGalleryFragment.this, 0);
+                dialogFragment.show(manager, DIALOG_PHOTO);
+
+                });
+
         }
 
         public void bindDrawable(Drawable drawable) {
             mItemImageView.setImageDrawable(drawable);
+            GalleryItem item = GalleryItemLab.getInstance().getGalleryItem(mGalleryItemPosition);
+            item.setDrawable(drawable);
+        }
+        public void bindGalleryItemPosition(int position) {
+            mGalleryItemPosition = position;
         }
     }
 
@@ -143,6 +167,7 @@ public class PhotoGalleryFragment extends Fragment implements GalleryItemLab.OnG
         public void onBindViewHolder(PhotoHolder photoHolder, int position) {
             GalleryItem galleryItem = mGalleryItems.get(position);
             Drawable placeholder = getResources().getDrawable(R.drawable.image_loading);
+            photoHolder.bindGalleryItemPosition(position);
             photoHolder.bindDrawable(placeholder);
             mThumbnailDownloader.queueThumbnail(photoHolder, galleryItem.getUrl());
         }

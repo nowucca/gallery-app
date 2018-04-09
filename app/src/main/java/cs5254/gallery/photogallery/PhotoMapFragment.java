@@ -10,6 +10,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
+import android.support.v4.app.FragmentManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -33,7 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class PhotoMapFragment extends SupportMapFragment implements GalleryItemLab.OnGalleryItemsRefreshedListener {
+public class PhotoMapFragment extends SupportMapFragment implements GoogleMap.OnMarkerClickListener, GalleryItemLab.OnGalleryItemsRefreshedListener {
     private static final String TAG = "PhotoMapFragment";
 
     private GoogleApiClient mClient;
@@ -71,6 +72,7 @@ public class PhotoMapFragment extends SupportMapFragment implements GalleryItemL
 
         getMapAsync(googleMap -> {
             mMap = googleMap;
+            mMap.setOnMarkerClickListener(this);
             updateUI();
         });
 
@@ -81,11 +83,22 @@ public class PhotoMapFragment extends SupportMapFragment implements GalleryItemL
                 (marker, bitmap) -> {
                     Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, 200, 200, false);
                     marker.setIcon(BitmapDescriptorFactory.fromBitmap(scaledBitmap));
+                    GalleryItem item = GalleryItemLab.getInstance().getGalleryItem((int) marker.getTag());
+                    item.setDrawable(new BitmapDrawable(Resources.getSystem(), bitmap));
                 }
         );
         mThumbnailDownloader.start();
         mThumbnailDownloader.getLooper();
         Log.i(TAG, "Background thread started");
+    }
+
+    @Override
+    public boolean onMarkerClick(Marker marker) {
+        FragmentManager manager = getFragmentManager();
+        PhotoDialogFragment dialog = PhotoDialogFragment.newInstance((int)marker.getTag());
+        dialog.setTargetFragment(PhotoMapFragment.this, 0);
+        dialog.show(manager, "dialog_photo");
+        return true;
     }
 
     @Override
@@ -154,7 +167,8 @@ public class PhotoMapFragment extends SupportMapFragment implements GalleryItemL
 
         int markerCount = 0;
 
-        for (GalleryItem item : galleryItems) {
+        for (int i = 0; i < galleryItems.size(); i++) {
+            GalleryItem item = galleryItems.get(i);
 
             if (item.getLat() == 0.0 && item.getLon() == 0.0) {
                 continue;
@@ -172,6 +186,7 @@ public class PhotoMapFragment extends SupportMapFragment implements GalleryItemL
                     .title(item.getCaption());
             bounds.include(itemPoint);
             Marker marker = mMap.addMarker(itemMarker);
+            marker.setTag(i);
             mThumbnailDownloader.queueThumbnail(marker, item.getUrl());
         }
 

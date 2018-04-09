@@ -35,6 +35,10 @@ public class GalleryItemLab {
         return mItems != null && !mItems.isEmpty();
     }
 
+    public GalleryItem getGalleryItem(int galleryItemPosition) {
+        return mItems.get(galleryItemPosition);
+    }
+
     public interface OnGalleryItemsRefreshedListener {
         void onGalleryItemsRefreshed(List<GalleryItem> items);
     }
