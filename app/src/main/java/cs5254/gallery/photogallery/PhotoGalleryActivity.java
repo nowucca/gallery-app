@@ -1,32 +1,52 @@
 package cs5254.gallery.photogallery;
 
 import android.app.Dialog;
-import android.content.DialogInterface;
-import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.Fragment;
-import android.util.Log;
-import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 
-public class PhotoGalleryActivity extends SingleFragmentActivity {
+public class PhotoGalleryActivity extends MultipleFragmentActivity {
 
     private static final int REQUEST_ERROR = 0;
+    private static final String TAG_FRAGMENT_GALLERY = "tag_frag_gallery";
+    private static final String TAG_FRAGMENT_MAP = "tag_frag_maps";
+
+    private BottomNavigationView bottomNavigationView;
 
     @Override
-    protected Fragment createFragment() {
-        return PhotoGalleryFragment.newInstance();
+    protected String getStartingFragmentTag() {
+        return TAG_FRAGMENT_GALLERY;
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-       
 
+        super.onCreate(savedInstanceState);
+
+        registerFragment(TAG_FRAGMENT_GALLERY, PhotoGalleryFragment.newInstance());
+        registerFragment(TAG_FRAGMENT_MAP, PhotoMapFragment.newInstance());
+
+        bottomNavigationView = findViewById(R.id.navigation);
+
+        bottomNavigationView.setOnNavigationItemSelectedListener(
+                item -> {
+                    switch (item.getItemId()) {
+                        case R.id.navigation_gallery:
+                            switchFragment(TAG_FRAGMENT_GALLERY);
+                            return true;
+                        case R.id.navigation_map:
+                            switchFragment(TAG_FRAGMENT_MAP);
+                            return true;
+                    }
+                    return false;
+                });
+
+        switchFragment(TAG_FRAGMENT_GALLERY);
     }
 
     @Override
