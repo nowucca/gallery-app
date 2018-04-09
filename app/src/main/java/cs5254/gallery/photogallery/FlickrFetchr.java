@@ -20,6 +20,16 @@ public class FlickrFetchr {
     private static final String TAG = "FlickrFetchr";
 
     private static final String API_KEY = "3aa3f5259166a7586f10e2df5e0aeedb";
+    private static final Uri ENDPOINT = Uri
+            .parse("https://api.flickr.com/services/rest/")
+            .buildUpon()
+            .appendQueryParameter("method", "flickr.photos.search")
+            .appendQueryParameter("tags", "canon,eos")
+            .appendQueryParameter("api_key", API_KEY)
+            .appendQueryParameter("format", "json")
+            .appendQueryParameter("nojsoncallback", "1")
+            .appendQueryParameter("extras", "url_s,geo")
+            .build();
 
     public byte[] getUrlBytes(String urlSpec) throws IOException {
         URL url = new URL(urlSpec);
@@ -52,16 +62,7 @@ public class FlickrFetchr {
         List<GalleryItem> items = new ArrayList<>();
 
         try {
-            String url = Uri.parse("https://api.flickr.com/services/rest/")
-                    .buildUpon()
-                    .appendQueryParameter("method", "flickr.photos.search")
-                    .appendQueryParameter("tags", "canon,eos")
-                    .appendQueryParameter("api_key", API_KEY)
-                    .appendQueryParameter("format", "json")
-                    .appendQueryParameter("nojsoncallback", "1")
-                    .appendQueryParameter("extras", "url_s")
-                    .build().toString();
-            String jsonString = getUrlString(url);
+            String jsonString = getUrlString(ENDPOINT.toString());
             Log.i(TAG, "Received JSON: " + jsonString);
             JSONObject jsonBody = new JSONObject(jsonString);
             parseItems(items, jsonBody);
@@ -92,6 +93,9 @@ public class FlickrFetchr {
             }
 
             item.setUrl(photoJsonObject.getString("url_s"));
+            item.setOwner(photoJsonObject.getString("owner"));
+            item.setLat(photoJsonObject.getDouble("latitude"));
+            item.setLon(photoJsonObject.getDouble("longitude"));
             items.add(item);
         }
     }

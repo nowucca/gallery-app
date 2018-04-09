@@ -84,16 +84,14 @@ public class ThumbnailDownloader<T> extends HandlerThread {
                     .decodeByteArray(bitmapBytes, 0, bitmapBytes.length);
             Log.i(TAG, "Bitmap created from url bytes size = "+bitmapBytes.length);
 
-            mResponseHandler.post(new Runnable() {
-                public void run() {
-                    if (mRequestMap.get(target) != url ||
-                            mHasQuit) {
-                        return;
-                    }
-
-                    mRequestMap.remove(target);
-                    mThumbnailDownloadListener.onThumbnailDownloaded(target, bitmap);
+            mResponseHandler.post(() -> {
+                if (mRequestMap.get(target) != url ||
+                        mHasQuit) {
+                    return;
                 }
+
+                mRequestMap.remove(target);
+                mThumbnailDownloadListener.onThumbnailDownloaded(target, bitmap);
             });
         } catch (IOException ioe) {
             Log.e(TAG, "Error downloading image", ioe);
