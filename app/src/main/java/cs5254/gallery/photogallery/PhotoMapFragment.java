@@ -7,6 +7,9 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
@@ -25,16 +28,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class PhotoMapFragment extends SupportMapFragment {
+public class PhotoMapFragment extends SupportMapFragment implements GalleryItemLab.OnGalleryItemsRefreshedListener {
     private static final String TAG = "PhotoMapFragment";
 
     private GoogleApiClient mClient;
     private GoogleMap mMap;
     private Bitmap mMapImage;
-    private List<GalleryItem> mItems = new ArrayList<>();
 
     public static PhotoMapFragment newInstance() {
         return new PhotoMapFragment();
+    }
+
+    @Override
+    public void onGalleryItemsRefreshed(List<GalleryItem> items) {
+        updateUI();
     }
 
     @Override
@@ -61,7 +68,29 @@ public class PhotoMapFragment extends SupportMapFragment {
             updateUI();
         });
 
-        new FetchItemsTask().execute();
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
+        inflater.inflate(R.menu.activity_options, menu);
+
+        MenuItem refreshItem = menu.findItem(R.id.action_refresh);
+        refreshItem.setEnabled(mClient.isConnected());
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_refresh:
+                if (mMap != null) {
+                    mMap.clear();
+                }
+                GalleryItemLab.getInstance().refreshItems(this);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     @Override
@@ -81,16 +110,28 @@ public class PhotoMapFragment extends SupportMapFragment {
 
 
     private void updateUI() {
-        if (mMap == null || mItems.isEmpty()) {
+        List<GalleryItem> galleryItems = GalleryItemLab.getInstance().getGalleryItems();
+
+        if (mMap == null || galleryItems.isEmpty()) {
             return;
         }
 
-        Log.i(TAG, "mItems has "+mItems.size()+" items");
+        Log.i(TAG, "mItems has "+galleryItems.size()+" items");
 
         mMap.clear();
         LatLngBounds.Builder bounds = new LatLngBounds.Builder();
 
-        for (GalleryItem item : mItems) {
+        int markerCount = 0;
+
+        for (GalleryItem item : galleryItems) {
+
+            if (item.getLat() == 0.0 && item.getLon() == 0.0) {
+                continue;
+            }
+
+            Log.i(TAG, String.format("Item id=%s lat=%s long=%s title=%s", item.getId(), item.getLat(), item.getLon(), item.getCaption()));
+            markerCount++;
+
             LatLng itemPoint = new LatLng(item.getLat(), item.getLon());
 
             //
@@ -106,7 +147,9 @@ public class PhotoMapFragment extends SupportMapFragment {
             bounds.include(itemPoint);
             mMap.addMarker(itemMarker);
         }
-        
+
+        Log.i(TAG, String.format("Expecting %d markers on the map", markerCount));
+
         int margin = getResources().getDimensionPixelSize(R.dimen.map_inset_margin);
         CameraUpdate update = CameraUpdateFactory.newLatLngBounds(bounds.build(), margin);
         mMap.animateCamera(update);
@@ -123,18 +166,4 @@ public class PhotoMapFragment extends SupportMapFragment {
         }
     }
 
-    private class FetchItemsTask extends AsyncTask<Void,Void,List<GalleryItem>> {
-
-        @Override
-        protected List<GalleryItem> doInBackground(Void... params) {
-            return new FlickrFetchr().fetchItems();
-        }
-
-        @Override
-        protected void onPostExecute(List<GalleryItem> items) {
-            mItems = items;
-            updateUI();
-        }
-
-    }
 }
