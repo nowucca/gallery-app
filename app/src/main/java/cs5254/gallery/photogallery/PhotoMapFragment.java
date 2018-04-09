@@ -1,10 +1,14 @@
 package cs5254.gallery.photogallery;
 
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.Menu;
@@ -21,6 +25,7 @@ import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.io.IOException;
@@ -33,7 +38,8 @@ public class PhotoMapFragment extends SupportMapFragment implements GalleryItemL
 
     private GoogleApiClient mClient;
     private GoogleMap mMap;
-    private Bitmap mMapImage;
+    private ThumbnailDownloader<Marker> mThumbnailDownloader;
+
 
     public static PhotoMapFragment newInstance() {
         return new PhotoMapFragment();
@@ -68,6 +74,18 @@ public class PhotoMapFragment extends SupportMapFragment implements GalleryItemL
             updateUI();
         });
 
+        Handler responseHandler = new Handler();
+        mThumbnailDownloader = new ThumbnailDownloader<>(responseHandler);
+
+        mThumbnailDownloader.setThumbnailDownloadListener(
+                (marker, bitmap) -> {
+                    Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, 200, 200, false);
+                    marker.setIcon(BitmapDescriptorFactory.fromBitmap(scaledBitmap));
+                }
+        );
+        mThumbnailDownloader.start();
+        mThumbnailDownloader.getLooper();
+        Log.i(TAG, "Background thread started");
     }
 
     @Override
@@ -91,6 +109,19 @@ public class PhotoMapFragment extends SupportMapFragment implements GalleryItemL
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        mThumbnailDownloader.clearQueue();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        mThumbnailDownloader.quit();
+        Log.i(TAG, "Background thread destroyed");
     }
 
     @Override
@@ -134,18 +165,14 @@ public class PhotoMapFragment extends SupportMapFragment implements GalleryItemL
 
             LatLng itemPoint = new LatLng(item.getLat(), item.getLon());
 
-            //
-            // Cannot do bitmap loading from network on the main thread.
-            //
-            // Bitmap itemBitmap = bitmapFromGalleryItem(item);
-            // BitmapDescriptor itemBitmapDescriptor = BitmapDescriptorFactory.fromBitmap(mMapImage);
-            // itemMarker.icon(itemBitmapDescriptor);
-            //
             MarkerOptions itemMarker = new MarkerOptions()
                     .position(itemPoint)
+                    // Cannot do bitmap loading from network on the main thread.
+                    // .icon(itemBitmapDescriptor)
                     .title(item.getCaption());
             bounds.include(itemPoint);
-            mMap.addMarker(itemMarker);
+            Marker marker = mMap.addMarker(itemMarker);
+            mThumbnailDownloader.queueThumbnail(marker, item.getUrl());
         }
 
         Log.i(TAG, String.format("Expecting %d markers on the map", markerCount));
@@ -155,15 +182,5 @@ public class PhotoMapFragment extends SupportMapFragment implements GalleryItemL
         mMap.animateCamera(update);
     }
 
-    private Bitmap bitmapFromGalleryItem(GalleryItem item) {
-        try {
-            FlickrFetchr fetchr = new FlickrFetchr();
-            byte[] bytes = fetchr.getUrlBytes(item.getUrl());
-            return BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-        } catch (IOException ioe) {
-            Log.i(TAG, "Unable to decode bitmap", ioe);
-            return null;
-        }
-    }
 
 }

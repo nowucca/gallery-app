@@ -2,13 +2,8 @@ package cs5254.gallery.photogallery;
 
 import android.app.Dialog;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
-import android.support.v4.app.Fragment;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
@@ -21,12 +16,9 @@ public class PhotoGalleryActivity extends MultipleFragmentActivity {
     private static final String TAG_FRAGMENT_GALLERY = "tag_frag_gallery";
     private static final String TAG_FRAGMENT_MAP = "tag_frag_maps";
 
-    private BottomNavigationView bottomNavigationView;
+    private static final String EXTRA_SELECTED_NAVIGATION_ID = "selected_navigation_item";
 
-    @Override
-    protected String getStartingFragmentTag() {
-        return TAG_FRAGMENT_GALLERY;
-    }
+    private BottomNavigationView bottomNavigationView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +44,7 @@ public class PhotoGalleryActivity extends MultipleFragmentActivity {
                 });
 
         switchFragment(TAG_FRAGMENT_GALLERY);
+        bottomNavigationView.setSelectedItemId(R.id.navigation_gallery);
     }
 
     @Override
@@ -90,7 +83,17 @@ public class PhotoGalleryActivity extends MultipleFragmentActivity {
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
         super.onSaveInstanceState(savedInstanceState);
+        savedInstanceState.putInt(EXTRA_SELECTED_NAVIGATION_ID,
+                bottomNavigationView.getSelectedItemId());
+
         Log.i(TAG, "onSaveInstanceState called");
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        bottomNavigationView.setSelectedItemId(savedInstanceState.getInt(EXTRA_SELECTED_NAVIGATION_ID,
+                R.id.navigation_gallery));
     }
 
     @Override

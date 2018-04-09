@@ -24,8 +24,6 @@ public abstract class MultipleFragmentActivity extends AppCompatActivity {
                 .commit();
     }
 
-    protected abstract String getStartingFragmentTag();
-
     @LayoutRes
     protected int getLayoutResId() {
         return R.layout.activity_fragment;
